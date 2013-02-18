@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# flush_kern_vm_cache -- Sync discs, drop cache, swap off, swap on, restore cache, sync
+
+# Copyright (C) 2013 Felipe Alcacibar <falcacibar@gmail.com>
+
+# Author: Felipe Alcacibar <falcacibar@gmail.com>
+
+if [ "$(id -u)" -ne "0" ]; then
+    echo -n "Superuser privileges required... "
+
+    if [ "$(whereis sudo | wc -w)" -gt 1 ]; then
+        echo "using sudo"
+        sudo $0
+    else
+        echo "using su"
+        su -c "$0"
+    fi
+else
+    echo "sync(ing)"
+    nice -n -20 sync
+    echo -n 'Setting sysctl: '
+    sysctl -w vm.drop_caches=3
+    echo "deactivating swap"
+    nice -n -20 swapoff -a
+    echo "activating swap"
+    nice -n -20 swapon -a
+    sleep 4
+    echo -n 'Setting sysctl: '
+    sysctl -w vm.drop_caches=1
+    echo 'sync'
+    nice -n -20 sync
+fi
